@@ -25,11 +25,13 @@
  */
 
 #include "py/runtime.h"
+#include "py/mphal.h"
 
 #if CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
 
 #include "ulp_common.h"
 #include "ulp_riscv.h"
+#include "ulp_riscv_i2c.h"
 
 typedef struct _esp32_ulp_riscv_obj_t {
     mp_obj_base_t base;
@@ -79,10 +81,50 @@ static mp_obj_t esp32_ulp_riscv_run(mp_obj_t self_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(esp32_ulp_riscv_run_obj, esp32_ulp_riscv_run);
 
+static mp_obj_t esp32_ulp_riscv_i2c_master_init(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_scl, ARG_sda, ARG_freq };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_scl, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_sda, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_freq, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 400000} },
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    ulp_riscv_i2c_cfg_t i2c_cfg = {
+        ULP_RISCV_I2C_DEFAULT_GPIO_CONFIG()
+        ULP_RISCV_I2C_FAST_MODE_CONFIG()
+    };
+
+    if (args[ARG_freq].u_int == 100000) {
+        i2c_cfg = (ulp_riscv_i2c_cfg_t) {
+            ULP_RISCV_I2C_DEFAULT_GPIO_CONFIG()
+            ULP_RISCV_I2C_STANDARD_MODE_CONFIG()
+        };
+    } else if (args[ARG_freq].u_int != 400000) {
+        mp_raise_ValueError(MP_ERROR_TEXT("only 100000 and 400000 frequency supported"));
+    }
+
+    if (args[ARG_scl].u_obj != MP_OBJ_NULL) {
+        i2c_cfg.i2c_pin_cfg.scl_io_num = machine_pin_get_id(args[ARG_scl].u_obj);
+    }
+    if (args[ARG_sda].u_obj != MP_OBJ_NULL) {
+        i2c_cfg.i2c_pin_cfg.sda_io_num = machine_pin_get_id(args[ARG_sda].u_obj);
+    }
+
+    esp_err_t err = ulp_riscv_i2c_master_init(&i2c_cfg);
+    check_esp_err(err);
+
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_ulp_riscv_i2c_master_init_obj, 1, esp32_ulp_riscv_i2c_master_init);
+
 static const mp_rom_map_elem_t esp32_ulp_riscv_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_set_wakeup_period), MP_ROM_PTR(&esp32_ulp_riscv_set_wakeup_period_obj) },
     { MP_ROM_QSTR(MP_QSTR_load_binary), MP_ROM_PTR(&esp32_ulp_riscv_load_binary_obj) },
     { MP_ROM_QSTR(MP_QSTR_run), MP_ROM_PTR(&esp32_ulp_riscv_run_obj) },
+    { MP_ROM_QSTR(MP_QSTR_i2c_master_init), MP_ROM_PTR(&esp32_ulp_riscv_i2c_master_init_obj) },
     { MP_ROM_QSTR(MP_QSTR_RESERVE_MEM), MP_ROM_INT(CONFIG_ULP_COPROC_RESERVE_MEM) },
 };
 static MP_DEFINE_CONST_DICT(esp32_ulp_riscv_locals_dict, esp32_ulp_riscv_locals_dict_table);
