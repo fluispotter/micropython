@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2018 "Andreas Valder" <andreas.valder@serioese.gmbh>
+ * Copyright (c) 2025 Mirza Kapetanovic
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -113,18 +113,26 @@ static mp_obj_t esp32_ulp_riscv_i2c_master_init(size_t n_args, const mp_obj_t *p
         i2c_cfg.i2c_pin_cfg.sda_io_num = machine_pin_get_id(args[ARG_sda].u_obj);
     }
 
-    esp_err_t err = ulp_riscv_i2c_master_init(&i2c_cfg);
-    check_esp_err(err);
-
+    int _errno = ulp_riscv_i2c_master_init(&i2c_cfg);
+    if (_errno != ESP_OK) {
+        mp_raise_OSError(_errno);
+    }
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_KW(esp32_ulp_riscv_i2c_master_init_obj, 1, esp32_ulp_riscv_i2c_master_init);
+
+static mp_obj_t esp32_ulp_riscv_reset(mp_obj_t self_in) {
+    ulp_riscv_reset();
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(esp32_ulp_riscv_reset_obj, esp32_ulp_riscv_reset);
 
 static const mp_rom_map_elem_t esp32_ulp_riscv_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_set_wakeup_period), MP_ROM_PTR(&esp32_ulp_riscv_set_wakeup_period_obj) },
     { MP_ROM_QSTR(MP_QSTR_load_binary), MP_ROM_PTR(&esp32_ulp_riscv_load_binary_obj) },
     { MP_ROM_QSTR(MP_QSTR_run), MP_ROM_PTR(&esp32_ulp_riscv_run_obj) },
     { MP_ROM_QSTR(MP_QSTR_i2c_master_init), MP_ROM_PTR(&esp32_ulp_riscv_i2c_master_init_obj) },
+    { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&esp32_ulp_riscv_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_RESERVE_MEM), MP_ROM_INT(CONFIG_ULP_COPROC_RESERVE_MEM) },
 };
 static MP_DEFINE_CONST_DICT(esp32_ulp_riscv_locals_dict, esp32_ulp_riscv_locals_dict_table);
