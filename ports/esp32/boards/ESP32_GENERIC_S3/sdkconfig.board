@@ -6,3 +6,15 @@ CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions-8MiB.csv"
+
+# Fluispotter: raise the ESP-IDF Interrupt Watchdog timeout 300 -> 1000 ms.
+# The mid-session reboots (machine.reset_cause() == WDT / code 3) were the
+# interrupt watchdog firing on a transient >300 ms interrupts-off window in the
+# WiFi/lightsleep path. Confirmed on-board: disable_irq()+800 ms busy -> WDT
+# reset; TIMG1 IWDT is the only armed watchdog (RTC WDT + TG0 WDT disabled).
+# Flash (os.sync ~33 us even with WiFi TX), the lightsleep path (40/40), the
+# motor kick and power were all ruled out by measurement. 3x margin absorbs the
+# transient; the ULP regulates the pumps independently of CPU interrupts, so a
+# longer interrupt watchdog is safe. Keep the watchdog ENABLED.
+# See fluispotter/fluispotter-firmware issue #44. Tunable (500-1000 ms).
+CONFIG_ESP_INT_WDT_TIMEOUT_MS=1000
