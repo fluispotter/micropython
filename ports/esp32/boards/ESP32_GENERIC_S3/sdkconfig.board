@@ -18,3 +18,12 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions-8MiB.csv"
 # longer interrupt watchdog is safe. Keep the watchdog ENABLED.
 # See fluispotter/fluispotter-firmware issue #44. Tunable (500-1000 ms).
 CONFIG_ESP_INT_WDT_TIMEOUT_MS=1000
+
+# Fluispotter: pin the brownout detector ON explicitly (safety — a medical
+# device must reset cleanly on a failing supply rather than run pumps on a sag).
+# This is the IDF default (level 7, ~2.51 V, most sensitive), made explicit so
+# it can't drift with an IDF default change. A brownout then reports as
+# reset cause PWRON/brownout (code 1), distinct from the WDT (code 3) reboots
+# above (which are interrupt-timing, not power).
+CONFIG_ESP_BROWNOUT_DET=y
+CONFIG_ESP_BROWNOUT_DET_LVL_SEL_7=y
