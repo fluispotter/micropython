@@ -123,6 +123,15 @@ mp_uint_t mp_usbd_cdc_tx_strn(const char *str, mp_uint_t len) {
         // When not connected we always write to usb fifo, ensuring it has latest data.
         uint32_t n2 = tud_cdc_write(str + i, n);
         tud_cdc_write_flush();
+        if (n2 == 0) {
+            // Zero progress: the TX FIFO is full and nothing is draining it
+            // (e.g. host suspended with DTR still asserted - the port looks
+            // ready but never reads).  Without this the not-connected branch
+            // spins in this loop forever holding the GIL: one print() then
+            // freezes the whole VM (fluispotter 2026-07-10 field freeze).
+            // Drop the remainder, mirroring the connected-path timeout.
+            break;
+        }
         i += n2;
     }
     return i;
