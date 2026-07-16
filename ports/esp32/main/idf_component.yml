@@ -5,5 +5,14 @@ dependencies:
     rules:
       - if: "target in [esp32s2, esp32s3]"
     version: "~1.0.0"
+  # Pinned EXACTLY to the versions the proven IMG-3 build resolved
+  # (CI run 29261338000, 2026-07-13): the unpinned resolver pulled
+  # tinyusb 0.21.0 on 2026-07-16, which renamed CFG_TUD_CDC_EP_BUFSIZE
+  # and breaks esp_tinyusb 1.0.3's usb_descriptors.c.  Reproducibility
+  # is part of the one-change-per-image guarantee.
+  espressif/tinyusb:
+    rules:
+      - if: "target in [esp32s2, esp32s3]"
+    version: "==0.19.0~3"
   idf:
     version: ">=5.2.0"
