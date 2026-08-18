@@ -1,7 +1,23 @@
 # Notes: the offset of the partition table itself is set in
 # $IDF_PATH/components/partition_table/Kconfig.projbuild.
-# Name,   Type, SubType, Offset,  Size, Flags
-nvs,      data, nvs,     0x9000,  0x6000,
-phy_init, data, phy,     0xf000,  0x1000,
-factory,  app,  factory, 0x10000, 0x1F0000,
-vfs,      data, fat,     0x200000, 0x600000,
+#
+# Fluispotter IMG-9: a 64 KiB coredump partition carved from the UNUSED TAIL
+# of factory.  factory ran 0x10000..0x200000 and butted directly against vfs,
+# so the space had to come out of factory: 0x1F0000 -> 0x1E0000.
+#   factory   0x10000  + 0x1E0000 = 0x1F0000
+#   coredump  0x1F0000 + 0x10000  = 0x200000
+# vfs THEREFORE DOES NOT MOVE.  It must not: the event store lives there and
+# the flash-preservation guarantee (spec 7.8) depends on that offset.
+# Headroom after the shrink: the app image is ~0x1A6640 (spec 5.9.4), which
+# leaves ~230 KiB free inside the smaller factory.
+#
+# bootstat.py carries _FACTORY_OFFSET/_FACTORY_SIZE copies of the factory row
+# to identify the bootloader's rtc_retain_mem_t block before trusting its
+# reboot counter.  A cross-file test pins the two together — change this row
+# and that file changes with it, or boots_since_power silently reports -1.
+# Name,   Type, SubType,  Offset,   Size, Flags
+nvs,      data, nvs,      0x9000,   0x6000,
+phy_init, data, phy,      0xf000,   0x1000,
+factory,  app,  factory,  0x10000,  0x1E0000,
+coredump, data, coredump, 0x1F0000, 0x10000,
+vfs,      data, fat,      0x200000, 0x600000,

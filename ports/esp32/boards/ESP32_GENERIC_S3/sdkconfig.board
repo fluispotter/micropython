@@ -11,3 +11,29 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions-8MiB.csv"
 # ONE config change on the proven v1.25.0 base (v1.25.0-esp32 tip 1d140090).
 # Brownout intentionally NOT included (one-change-per-image discipline).
 CONFIG_ESP_INT_WDT_TIMEOUT_MS=1000
+
+# Fluispotter IMG-9: core dump to flash, ELF format.  ONE change on IMG-7.
+# Until now no CONFIG_ESP_COREDUMP_* symbol appeared in any of the seven
+# sdkconfig fragments, so the Kconfig default ESP_COREDUMP_ENABLE_TO_NONE
+# applied and the device had NO crash capture for its entire history
+# (spec 5.9.4) — a default nobody revisited, not a considered trade-off.
+#
+# The destination is a Kconfig CHOICE (ESP_COREDUMP_TO_FLASH_OR_UART), so the
+# unselected members are blanked explicitly, the same idiom this file already
+# uses for the FLASHSIZE choice above.  These four lines are ONE change: the
+# blanks deselect, they do not add a second feature.
+#
+# Symbol names verified against runtime/esp-idf v5.2.2-3-g3f90a3dff8
+# components/espcoredump/Kconfig, NOT remembered — the CONFIG_ESP32_*
+# spellings in that component's sdkconfig.rename are the pre-v5.0 names and
+# ARDUINO_NANO_ESP32/sdkconfig.board in this same tree still carries one of
+# them (CONFIG_ESP_ENABLE_COREDUMP_TO_FLASH, which matches nothing at all).
+# A wrong symbol name yields a silently-unchanged image.
+#
+# Requires the `coredump` partition added to partitions-8MiB.csv in the same
+# commit; ESP_COREDUMP_CHECKSUM_CRC32 and ESP_COREDUMP_CHECK_BOOT keep their
+# defaults (CRC32, check-on-boot y).
+CONFIG_ESP_COREDUMP_ENABLE_TO_NONE=
+CONFIG_ESP_COREDUMP_ENABLE_TO_UART=
+CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
+CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
