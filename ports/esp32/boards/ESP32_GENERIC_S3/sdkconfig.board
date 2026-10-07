@@ -43,3 +43,15 @@ CONFIG_ESP_INT_WDT_TIMEOUT_MS=1000
 # CONFIG_ESP_COREDUMP_ENABLE_TO_UART is not set
 CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
 CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
+
+# IMG-8 (fault diagnostics, owner go 2026-10-07): the bootloader's custom RTC
+# reserve that the boot hook (bootloader_components/fluispotter_boot_hooks)
+# fills with the ASSIST_DEBUG watchdog program-counter capture.  0x50 bytes =
+# 20 words (layout in hooks.c).  Not in the block CRC (the default, stated):
+# the hook writes it before the bootloader validates the block.  The reserve
+# moves rtc_retain_mem_t down by 0x50 to 0x600FFFA0; bootstat.py follows it.
+# RTC fast memory is heap in this build (ESP_SYSTEM_ALLOW_RTC_FAST_MEM_AS_HEAP),
+# which is why the capture does not use a hand-placed RTC fast address.
+CONFIG_BOOTLOADER_CUSTOM_RESERVE_RTC=y
+CONFIG_BOOTLOADER_CUSTOM_RESERVE_RTC_SIZE=0x50
+# CONFIG_BOOTLOADER_CUSTOM_RESERVE_RTC_IN_CRC is not set
